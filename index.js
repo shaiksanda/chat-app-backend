@@ -195,7 +195,7 @@ app.post('/sendOtp', async (req, res) => {
     try {
         const { email } = req.body
         await generateAndSendOtp(email)
-        return res.status(200).json({ message: "OTP has been sent to your email! Please check your inbox."})
+        return res.status(200).json({ message: "OTP has been sent to your email! Please check your inbox." })
     }
     catch (err) {
         return res.status(500).json({ err_msg: err.message })
@@ -222,17 +222,27 @@ app.post("/verifyOtp", async (req, res) => {
 app.post("/resetPassword", async (req, res) => {
     try {
         const { email, password } = req.body;
-
         const user = await User.findOne({ email });
-
+        
         if (!user) {
             return res.status(404).json({ err_msg: "User Not Found" });
         }
 
+
+        const isOldPasswordMatched = await bcrypt.compare(password, user.password)
+
+        if (isOldPasswordMatched) {
+            return res.status(400).json({
+                err_msg: "You cannot reuse your current password. Please choose a different one."
+            })
+        }
+
         const encryptedPassword = await bcrypt.hash(password, 10);
 
+    
+
         user.password = encryptedPassword;
-        user.otp=""
+        user.otp = ""
         await user.save();
 
         res.status(200).json({ msg: "Password reset successful" });
